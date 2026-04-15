@@ -1,9 +1,13 @@
 const express = require("express");
 var cors = require('cors')
 
+const db = require("./db");
+
 const port = 9100;
 
 const app = express();
+
+
 
 app.use(cors())
 
