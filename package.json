@@ -1,0 +1,28 @@
+{
+  "name": "stage1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nngozii/Stage-1-Task-Data-Persistence-API-Design-Assessment.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Nngozii/Stage-1-Task-Data-Persistence-API-Design-Assessment/issues"
+  },
+  "homepage": "https://github.com/Nngozii/Stage-1-Task-Data-Persistence-API-Design-Assessment#readme",
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "nodemon": "^3.1.14",
+    "sqlite3": "^6.0.1"
+  }
+}
