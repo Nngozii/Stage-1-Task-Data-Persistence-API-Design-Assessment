@@ -4,7 +4,7 @@ db.pragma("journal_mode = WAL");
 
 db.exec(`
     CREATE TABLE IF NOT EXISTS profiles(
-    id INT NOT NULL PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     name TEXT NOT NULL
     )
     `);
