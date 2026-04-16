@@ -1,18 +1,37 @@
 const express = require("express");
 var cors = require("cors");
+require("dotenv").config();
 const { uuidv7 } = require("uuidv7");
+const { Pool } = require("pg");
 
-const db = require("./db");
-
-const port = 9100;
+const port = process.env.PORT || 9100;
 const app = express();
+
+// ─── Database Setup ───────────────────────────────────────────────────────────
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+pool.query(`
+  CREATE TABLE IF NOT EXISTS profiles (
+    id TEXT PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL,
+    gender TEXT,
+    gender_probability REAL,
+    sample_size INTEGER,
+    age INTEGER,
+    age_group TEXT,
+    country_id TEXT,
+    country_probability REAL,
+    created_at TEXT
+  )
+`);
 
 app.use(cors());
 app.use(express.json());
 
 // Create Profile Endpoint
 app.post("/api/profiles", async (req, res) => {
-  let { name } = req.query;
+  let { name } = req.body; // fix 1: was req.query
 
   // Validation
   if (name === undefined || name === "") {
@@ -28,14 +47,15 @@ app.post("/api/profiles", async (req, res) => {
   }
 
   // Database Existing Data Check
-  const existingRow = db
-    .prepare("SELECT * FROM profiles WHERE name = ?")
-    .get(name);
-  if (existingRow) {
+  const existingRow = await pool.query(
+    "SELECT * FROM profiles WHERE name = $1",
+    [name],
+  );
+  if (existingRow.rows[0]) {
     return res.status(201).json({
       status: "success",
       message: "Profile already exists",
-      data: existingRow,
+      data: existingRow.rows[0],
     });
   }
 
@@ -112,12 +132,22 @@ app.post("/api/profiles", async (req, res) => {
     };
 
     // Database Creation Logic
-    const stmt = db
-      .prepare(
-        `INSERT INTO profiles (id, name, gender, gender_probability, sample_size, age, age_group, country_id, country_probability, created_at)
-      VALUES (@id, @name, @gender, @gender_probability, @sample_size, @age, @age_group, @country_id, @country_probability, @created_at)`,
-      )
-      .run(data_response);
+    await pool.query(
+      `INSERT INTO profiles (id, name, gender, gender_probability, sample_size, age, age_group, country_id, country_probability, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        data_response.id,
+        data_response.name,
+        data_response.gender,
+        data_response.gender_probability,
+        data_response.sample_size,
+        data_response.age,
+        data_response.age_group,
+        data_response.country_id,
+        data_response.country_probability,
+        data_response.created_at,
+      ],
+    );
 
     res.status(201).json({
       status: "success",
@@ -142,12 +172,20 @@ app.post("/api/profiles", async (req, res) => {
 app.get(`/api/profiles/:id`, async (req, res) => {
   const { id } = req.params;
   try {
-    const profile = db.prepare("SELECT * FROM profiles WHERE id = ?").get(id);
+    const result = await pool.query("SELECT * FROM profiles WHERE id = $1", [
+      id,
+    ]);
+    const profile = result.rows[0];
+
+    if (!profile)
+      return res
+        .status(404)
+        .json({ status: "error", message: "Profile not found" }); // fix 2: check before responding
+
     res.status(200).json({
       status: "success",
       data: profile,
     });
-    if (!profile) return res.status(404).json({ message: "Not found" });
   } catch (err) {
     if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
       return res.status(502).json({
@@ -166,12 +204,17 @@ app.get(`/api/profiles/:id`, async (req, res) => {
 // Get All Profiles Endpoint
 app.get(`/api/profiles`, async (req, res) => {
   try {
-    const profile = db.prepare("SELECT * FROM profiles").all();
+    const result = await pool.query("SELECT * FROM profiles");
+    const profiles = result.rows;
+
+    if (!profiles)
+      return res.status(404).json({ status: "error", message: "Not found" }); // fix 2: check before responding
+
     res.status(200).json({
       status: "success",
-      data: profile,
+      count: profiles.length, // fix 5: added count
+      data: profiles,
     });
-    if (!profile) return res.status(404).json({ message: "Not found" });
   } catch (err) {
     if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
       return res.status(502).json({
@@ -191,11 +234,19 @@ app.get(`/api/profiles`, async (req, res) => {
 app.delete(`/api/profiles/:id`, async (req, res) => {
   const { id } = req.params;
   try {
-    const profile = db.prepare("DELETE FROM profiles WHERE id = ?").run(id);
+    const result = await pool.query("SELECT 1 FROM profiles WHERE id = $1", [
+      id,
+    ]);
+
+    if (!result.rows[0])
+      return res
+        .status(404)
+        .json({ status: "error", message: "Profile not found" }); // fix 2: check before responding
+
+    await pool.query("DELETE FROM profiles WHERE id = $1", [id]);
     res.status(200).json({
       status: "success",
     });
-    if (!profile) return res.status(404).json({ message: "Not found" });
   } catch (err) {
     if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
       return res.status(502).json({

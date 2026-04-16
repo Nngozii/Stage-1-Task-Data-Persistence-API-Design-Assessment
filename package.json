@@ -20,6 +20,7 @@
   "homepage": "https://github.com/Nngozii/Stage-1-Task-Data-Persistence-API-Design-Assessment#readme",
   "dependencies": {
     "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "nodemon": "^3.1.14",
     "pg": "^8.20.0",
