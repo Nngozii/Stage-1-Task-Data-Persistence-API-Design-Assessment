@@ -13,6 +13,19 @@ app.use(cors());
 app.post("/api/profiles", async (req, res) => {
   let { name } = req.query;
 
+  // Validation
+  if (name === undefined || name === "") {
+    return res
+      .status(400)
+      .json({ status: "error", message: "Missing or empty name" });
+  }
+
+  if (typeof name !== "string") {
+    return res
+      .status(422)
+      .json({ status: "error", message: "name must be a string" });
+  }
+
   // Database Existing Data Check
   const existingRow = db
     .prepare("SELECT * FROM profiles WHERE name = ?")
@@ -26,7 +39,6 @@ app.post("/api/profiles", async (req, res) => {
   }
 
   try {
-
     // API Calls
     const genderizeResponse = await fetch(
       `https://api.genderize.io/?name=${name}`,
@@ -41,6 +53,28 @@ app.post("/api/profiles", async (req, res) => {
     const agifyData = await agifyResponse.json();
     const nationalizeData = await nationalizeResponse.json();
     console.log("called apis");
+
+    // Edge case checks
+    if (!genderizeData.gender || genderizeData.count === 0) {
+      return res.status(502).json({
+        status: "error",
+        message: "Genderize returned an invalid response",
+      });
+    }
+
+    if (!agifyData.age) {
+      return res.status(502).json({
+        status: "error",
+        message: "Agify returned an invalid response",
+      });
+    }
+
+    if (!nationalizeData.country || nationalizeData.country.length === 0) {
+      return res.status(502).json({
+        status: "error",
+        message: "Nationalize returned an invalid response",
+      });
+    }
 
     // Age Classification Logic
     let age_group;
@@ -103,7 +137,6 @@ app.post("/api/profiles", async (req, res) => {
   }
 });
 
-
 // Get Single Profile Endpoint
 app.get(`/api/profiles/:id`, async (req, res) => {
   const { id } = req.params;
@@ -111,8 +144,8 @@ app.get(`/api/profiles/:id`, async (req, res) => {
     const profile = db.prepare("SELECT * FROM profiles WHERE id = ?").get(id);
     res.status(200).json({
       status: "success",
-      data: profile
-    })
+      data: profile,
+    });
     if (!profile) return res.status(404).json({ message: "Not found" });
   } catch (err) {
     if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
@@ -128,16 +161,15 @@ app.get(`/api/profiles/:id`, async (req, res) => {
     }
   }
 });
-
 
 // Get All Profiles Endpoint
 app.get(`/api/profiles`, async (req, res) => {
- try {
+  try {
     const profile = db.prepare("SELECT * FROM profiles").all();
     res.status(200).json({
       status: "success",
-      data: profile
-    })
+      data: profile,
+    });
     if (!profile) return res.status(404).json({ message: "Not found" });
   } catch (err) {
     if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
@@ -153,19 +185,18 @@ app.get(`/api/profiles`, async (req, res) => {
     }
   }
 });
-
 
 // Delete Selected Profile Endpoint
 app.delete(`/api/profiles/:id`, async (req, res) => {
   const { id } = req.params;
   try {
-    const profile = db.prepare('DELETE FROM profiles WHERE id = ?').run(id);
+    const profile = db.prepare("DELETE FROM profiles WHERE id = ?").run(id);
     res.status(200).json({
       status: "success",
-    })
+    });
     if (!profile) return res.status(404).json({ message: "Not found" });
   } catch (err) {
-   if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
+    if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
       return res.status(502).json({
         status: "error",
         message: "Upstream API timed out",
@@ -178,7 +209,6 @@ app.delete(`/api/profiles/:id`, async (req, res) => {
     }
   }
 });
-
 
 app.listen(port, () => {
   console.log("Server listen on port", port);
