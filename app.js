@@ -13,7 +13,20 @@ app.use(cors());
 app.post("/api/profiles", async (req, res) => {
   let { name } = req.query;
 
+  // Database Existing Data Check
+  const existingRow = db
+    .prepare("SELECT * FROM profiles WHERE name = ?")
+    .get(name);
+  if (existingRow) {
+    return res.status(201).json({
+      status: "success",
+      message: "Profile already exists",
+      data: existingRow,
+    });
+  }
+
   try {
+
     // API Calls
     const genderizeResponse = await fetch(
       `https://api.genderize.io/?name=${name}`,
@@ -44,7 +57,7 @@ app.post("/api/profiles", async (req, res) => {
     }
 
     // Data Creation Timestamp
-    let processedDateTime = new Date().toISOString();
+    let created_at = new Date().toISOString();
 
     // Implementing UUID v7
     const id = uuidv7();
@@ -60,27 +73,21 @@ app.post("/api/profiles", async (req, res) => {
       age_group: age_group,
       country_id: nationalizeData.country[0].country_id,
       country_probability: nationalizeData.country[0].probability,
-      created_at: processedDateTime,
+      created_at: created_at,
     };
 
-    // Database Existing Data Check
-    const row = db.prepare("SELECT 1 FROM profiles WHERE name = ?").get(name);
-    if (row) {
-      res.status(201).json({
-        status: "success",
-        message: "Profile already exists",
-        data: data_response,
-      });
-    } else {
-      // Database Creation Logic
-      const stmt = db.prepare("INSERT INTO profiles (name) VALUES (?)");
-      const result = stmt.run(name);
+    // Database Creation Logic
+    const stmt = db
+      .prepare(
+        `INSERT INTO profiles (id, name, gender, gender_probability, sample_size, age, age_group, country_id, country_probability, created_at)
+      VALUES (@id, @name, @gender, @gender_probability, @sample_size, @age, @age_group, @country_id, @country_probability, @created_at)`,
+      )
+      .run(data_response);
 
-      res.status(201).json({
-        status: "success",
-        data: data_response,
-      });
-    }
+    res.status(201).json({
+      status: "success",
+      data: data_response,
+    });
   } catch (err) {
     res.send(err.message);
   }
