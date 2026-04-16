@@ -8,6 +8,7 @@ const port = 9100;
 const app = express();
 
 app.use(cors());
+app.use(express.json());
 
 // Create Profile Endpoint
 app.post("/api/profiles", async (req, res) => {
