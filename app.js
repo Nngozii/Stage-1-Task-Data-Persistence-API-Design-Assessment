@@ -1,5 +1,6 @@
 const express = require("express");
 var cors = require("cors");
+const { uuidv7 } = require("uuidv7");
 
 const db = require("./db");
 
@@ -10,15 +11,8 @@ app.use(cors());
 
 app.post("/api/profiles", async (req, res) => {
   let { name } = req.query;
-  try {
-    // Database Existing Data Check
-    const row = db.prepare("SELECT 1 FROM profiles WHERE name = ?").get(name);
-    if (row) {
-      console.log("Data exists");
-    } else {
-      console.log("Data does not exist");
-    }
 
+  try {
     // API Calls
     const genderizeResponse = await fetch(
       `https://api.genderize.io/?name=${name}`,
@@ -34,10 +28,6 @@ app.post("/api/profiles", async (req, res) => {
     const nationalizeData = await nationalizeResponse.json();
     console.log("called apis");
 
-    // Database Creation Logic
-    const stmt = db.prepare("INSERT INTO profiles (name) VALUES (?)");
-    const result = stmt.run(name);
-
     // Age Classification Logic
     let age_group;
     const age = agifyData.age;
@@ -52,23 +42,44 @@ app.post("/api/profiles", async (req, res) => {
       age_group = "senior";
     }
 
+    // Data Creation Timestamp
     let processedDateTime = new Date().toISOString();
 
-    res.status(201).json({
-      status: "success",
-      data: {
-        id: result.lastInsertRowid,
-        name: genderizeData.name,
-        gender: genderizeData.gender,
-        gender_probability: genderizeData.probability,
-        sample_size: genderizeData.count,
-        age: agifyData.age,
-        age_group: age_group,
-        country_id: nationalizeData.country[0].country_id,
-        country_probability: nationalizeData.country[0].probability,
-        created_at: processedDateTime,
-      },
-    });
+    // Implementing UUID v7
+    const id = uuidv7();
+
+    // Data Response. To avoid code repetition
+    data_response = {
+      id: id,
+      name: genderizeData.name,
+      gender: genderizeData.gender,
+      gender_probability: genderizeData.probability,
+      sample_size: genderizeData.count,
+      age: agifyData.age,
+      age_group: age_group,
+      country_id: nationalizeData.country[0].country_id,
+      country_probability: nationalizeData.country[0].probability,
+      created_at: processedDateTime,
+    };
+
+    // Database Existing Data Check
+    const row = db.prepare("SELECT 1 FROM profiles WHERE name = ?").get(name);
+    if (row) {
+      res.status(201).json({
+        status: "success",
+        message: "Profile already exists",
+        data: data_response,
+      });
+    } else {
+      // Database Creation Logic
+      const stmt = db.prepare("INSERT INTO profiles (name) VALUES (?)");
+      const result = stmt.run(name);
+
+      res.status(201).json({
+        status: "success",
+        data: data_response,
+      });
+    }
   } catch (err) {
     res.send(err.message);
   }
