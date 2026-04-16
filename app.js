@@ -93,6 +93,21 @@ app.post("/api/profiles", async (req, res) => {
   }
 });
 
+// Get Single Profile Endpoint
+app.get(`/api/profiles/:id`, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const profile = db.prepare("SELECT * FROM profiles WHERE id = ?").get(id);
+    res.status(200).json({
+      status: "success",
+      data: profile
+    })
+    if (!profile) return res.status(404).json({ message: "Not found" });
+  } catch (err) {
+    res.send(err.message);
+  }
+});
+
 app.listen(port, () => {
   console.log("Server listen on port", port);
 });
