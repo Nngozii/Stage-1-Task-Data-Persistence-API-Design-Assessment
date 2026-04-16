@@ -23,7 +23,7 @@ app.post("/api/profiles", async (req, res) => {
   if (typeof name !== "string") {
     return res
       .status(422)
-      .json({ status: "error", message: "name must be a string" });
+      .json({ status: "error", message: "Name must be a string" });
   }
 
   // Database Existing Data Check
