@@ -9,6 +9,7 @@ const app = express();
 
 app.use(cors());
 
+// Create Profile Endpoint
 app.post("/api/profiles", async (req, res) => {
   let { name } = req.query;
 
