@@ -89,7 +89,17 @@ app.post("/api/profiles", async (req, res) => {
       data: data_response,
     });
   } catch (err) {
-    res.send(err.message);
+    if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
+      return res.status(502).json({
+        status: "error",
+        message: "Upstream API timed out",
+      });
+    } else {
+      res.status(500).json({
+        status: "error",
+        message: "Internal Server Error",
+      });
+    }
   }
 });
 
@@ -105,7 +115,17 @@ app.get(`/api/profiles/:id`, async (req, res) => {
     })
     if (!profile) return res.status(404).json({ message: "Not found" });
   } catch (err) {
-    res.send(err.message);
+    if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
+      return res.status(502).json({
+        status: "error",
+        message: "Upstream API timed out",
+      });
+    } else {
+      res.status(500).json({
+        status: "error",
+        message: "Internal Server Error",
+      });
+    }
   }
 });
 
@@ -120,7 +140,17 @@ app.get(`/api/profiles`, async (req, res) => {
     })
     if (!profile) return res.status(404).json({ message: "Not found" });
   } catch (err) {
-    res.send(err.message);
+    if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
+      return res.status(502).json({
+        status: "error",
+        message: "Upstream API timed out",
+      });
+    } else {
+      res.status(500).json({
+        status: "error",
+        message: "Internal Server Error",
+      });
+    }
   }
 });
 
@@ -135,7 +165,17 @@ app.delete(`/api/profiles/:id`, async (req, res) => {
     })
     if (!profile) return res.status(404).json({ message: "Not found" });
   } catch (err) {
-    res.send(err.message);
+   if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
+      return res.status(502).json({
+        status: "error",
+        message: "Upstream API timed out",
+      });
+    } else {
+      res.status(500).json({
+        status: "error",
+        message: "Internal Server Error",
+      });
+    }
   }
 });
 
