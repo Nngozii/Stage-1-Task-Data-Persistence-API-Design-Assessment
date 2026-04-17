@@ -4,7 +4,7 @@ require("dotenv").config();
 const { uuidv7 } = require("uuidv7");
 const { Pool } = require("pg");
 
-const port = process.env.PORT || 9100;
+const port = 9100;
 const app = express();
 
 // ─── Database Setup ───────────────────────────────────────────────────────────
