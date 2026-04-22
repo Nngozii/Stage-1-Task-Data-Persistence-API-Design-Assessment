@@ -7,7 +7,7 @@ const { Pool } = require("pg");
 const port = 9100;
 const app = express();
 
-// ─── Database Setup ───────────────────────────────────────────────────────────
+// Database Setup 
 
 const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
@@ -17,15 +17,15 @@ const pool = new Pool({
 pool.query(`
   CREATE TABLE IF NOT EXISTS profiles (
     id TEXT PRIMARY KEY,
-    name TEXT UNIQUE NOT NULL,
-    gender TEXT,
-    gender_probability REAL,
-    sample_size INTEGER,
-    age INTEGER,
-    age_group TEXT,
-    country_id TEXT,
-    country_probability REAL,
-    created_at TEXT
+    name VARCHAR UNIQUE NOT NULL,
+    gender VARCHAR,
+    gender_probability FLOAT,
+    age INT,
+    age_group VARCHAR,
+    country_id VARCHAR(2),
+    country_name VARCHAR,
+    country_probability FLOAT,
+    created_at TIMESTAMP
   )
 `);
 
